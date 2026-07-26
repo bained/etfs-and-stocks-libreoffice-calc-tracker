@@ -1,88 +1,73 @@
 # LibreOffice ETF Data Tracker
 
-Този проект е конверсия на Google Apps Script проекта за проследяване на европейски ETF-и към **LibreOffice Calc**, използвайки **LibreOffice Basic** макроси.
+[![YouTube: Setup & Usage Guide](https://img.shields.io/badge/YouTube-Setup%20%26%20Usage%20Guide-red)](https://www.youtube.com/watch?v=eK5rkf-VOP4)
 
-## Изисквания
+Watch the video guide on how to use the pre-built `.ods` file:  
+[**📺 LibreOffice ETF Tracker — Setup & Usage Guide**](https://www.youtube.com/watch?v=eK5rkf-VOP4)
 
-- **LibreOffice 7.x+** (Windows, чрез MSXML2.XMLHTTP.6.0)
-- Активна интернет връзка
+---
 
-## Структура на листовете
+This project provides an optimized system for tracking European ETFs in **LibreOffice Calc** using a **LibreOffice Basic** macro. Instead of relying on heavy real-time formulas that cause API rate limiting, data is fetched on demand via a button and stored in a local helper sheet (`etf_data`).
 
-| Лист | Роля |
+## File Structure
+
+| File | Description |
 |---|---|
-| `etf_data` | Данни — ред 1: тикери, ред 2: цени, редове 3+: история (най-нова → най-стара) |
-| `ETFs` | Потребителски интерфейс |
-| `settings` | Конфигурация — C2: Log (Yes/No), C3: Delay (ms) |
-| `etf_logs` | Лог (автоматично създава се, ако log-ването е включено) |
+| `ETFs_stat_v1.0.0.ods` | Pre-configured LibreOffice Calc spreadsheet — ready to use |
+| `code.bas` | LibreOffice Basic macro source code |
+| `README.md` | This documentation |
 
-## Настройка
+## Architecture
 
-### 1. Създай листовете
+| Sheet | Purpose |
+|---|---|
+| `etf_data` | Local cache — row 1: tickers, row 2: current prices, rows 3+: historical close prices (newest → oldest) |
+| `ETFs` | User interface with your portfolio, prices, and data |
+| `settings` | Macro configuration |
+| `etf_logs` | Auto-created log file (when logging is enabled) |
 
-Създай `etf_data`, `ETFs`, `settings`. `etf_logs` се създава автоматично.
+## Settings
 
-### 2. Добави тикерите
+The `settings` sheet controls macro behavior:
 
-В `etf_data`, **ред 1**: `A1: SXR8.DE`, `B1: SXRV.DE`, ...
-
-### 3. Конфигурирай `settings`
-
-| Клетка | Пример | Описание |
+| Cell | Example | Description |
 |---|---|---|
-| **C2** | `No` | `Yes` — включва логване в `etf_logs` |
-| **C3** | `500` | Забавяне в ms между заявките към Yahoo |
+| **C2** | `Yes` / `No` | Enable or disable logging to `etf_logs` sheet |
+| **C3** | `500` | Delay in milliseconds between Yahoo Finance requests |
 
-### 4. Създай Loader Shape (опционално)
+## Data Flow
 
-Нарисувай текстово поле в листа **ETFs**, задай му име `ETF_LOADER_SHAPE` и го направи **невидим** (Properties → Uncheck "Visible"). При стартиране на макроса, shape-ът ще стане видим с прогреса.
+1. User clicks the **Update** button in the `ETFs` sheet
+2. Macro reads tickers from row 1 of `etf_data`
+3. For each ticker, it fetches 1 year of daily close prices from Yahoo Finance
+4. Data is saved: row 2 = current price, rows 3+ = historical prices (newest at top)
+5. Formulas in `ETFs` read from `etf_data` instantly — no network requests
 
-Ако няма такъв shape, макросът ще го създаде сам (и ще го изтрие след приключване).
+## Requirements
 
-### 5. Импортирай макроса
+- **LibreOffice 7.x+** (Windows)
+- Active internet connection
+- **MSXML2.XMLHTTP.6.0** (included with Windows)
+- **Macros must be enabled** in LibreOffice settings (see below)
 
-**Tools → Macros → Organize Macros → LibreOffice Basic → Edit** → постави кода от `code.bas`
+## Enabling Macros in LibreOffice
 
-### 6. Създай бутон
+Before using the spreadsheet, you must allow macro execution:
 
-Form Controls → Push Button → Assign macro: `UpdateEtfData`
+1. Open the `.ods` file
+2. Go to **Tools → Options → LibreOffice → Security**
+3. Click **Macro Security** button
+4. Set security level to **Medium** (recommended) or **Low**
+5. Save and reopen the file
+6. When prompted, click **Enable Macros**
 
-## Потребителска функция
+> **Note:** On **Medium** security, you will be prompted each time you open the file. Select "Enable Macros" to allow the update button to work.
 
-### `GetSparklineData(ticker, period)`
+If macros are not enabled, clicking the **Update** button will do nothing.
 
-Връща масив от цени за даден период. Използва се с **Ctrl+Shift+Enter** (масивна формула) или с `INDEX`:
+## Notes
 
-```
-=INDEX(GETSPARKLINEDATA(A5; "1w"); 1; 1)   ' 1-ва цена (най-стара)
-=INDEX(GETSPARKLINEDATA(A5; "1w"); 1; 5)   ' 5-та цена (най-нова)
-```
-
-| period | Брой цени |
-|---|---|
-| "1w" | 5 |
-| "1m" | 21 |
-| "1y" | ~252 |
-
-## Функции (макроси)
-
-| Макрос | Описание |
-|---|---|
-| `UpdateEtfData()` | **Основен — закачи на бутон.** Изтегля всички данни от Yahoo Finance |
-| `TestConfiguration()` | Тестова — проверява настройките и Loader-а |
-
-## Одит на кода (актуален)
-
-- **Няма нереферирани функции** — всички се използват
-- **Няма дублиращи се декларации** — всички `Dim` са в началото на функциите
-- **Премахната** неисползваната константа `SHEET_UI`
-- **Кеширането е премахнато** — потребителят контролира кога да опреснява чрез бутона
-- **Локална независимост** — `ParseUsNumber()` парсва US числа (с точка), `SetCellValue()` записва с локалния формат (запетая)
-- **HTTP таймаут** — 30 секунди
-- **Loader** — показва/скрива Shape по име, без да засяга други shapes (бутони)
-- **Rate limiting** — конфигурируем от `settings!C3`
-
-## Ограничения
-
-- Само Windows (MSXML2.XMLHTTP.6.0)
-- Синхронни HTTP заявки — UI блокира, докато Yahoo отговори
+- Prices are reversed automatically — Yahoo returns oldest-first, the macro stores newest-first
+- `GetSparklineData(ticker, period)` is available as a custom Calc function for charting (returns array of close prices per period: `"1w"`, `"1m"`, `"1y"`)
+- Use with **Ctrl+Shift+Enter** (array formula) or `INDEX(GETSPARKLINEDATA(...); 1; n)`
+- No caching — each button press fetches fresh data
