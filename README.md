@@ -1,9 +1,8 @@
 # LibreOffice ETF Data Tracker
 
-[![YouTube: Setup & Usage Guide](https://img.shields.io/badge/YouTube-Setup%20%26%20Usage%20Guide-red)](https://www.youtube.com/watch?v=eK5rkf-VOP4)
+[<img src="https://i.ytimg.com/vi/eK5rkf-VOP4/maxresdefault.jpg" alt="LibreOffice ETF Tracker — Setup & Usage Guide" width="560">](https://www.youtube.com/watch?v=eK5rkf-VOP4)
 
-Watch the video guide on how to use the pre-built `.ods` file:  
-[**📺 LibreOffice ETF Tracker — Setup & Usage Guide**](https://www.youtube.com/watch?v=eK5rkf-VOP4)
+Click the thumbnail above to watch the **LibreOffice ETF Tracker — Setup & Usage Guide** on YouTube.
 
 ---
 
